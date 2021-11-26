@@ -10,6 +10,10 @@ int main(int argc, char *argv[]) {
 
   FILE *fp;
   fp = fopen(filename, "r");
+  if (fp == NULL) {
+    printf("Error with file");
+    return 0;
+  }
 
   int CHARS[127];
 
@@ -35,34 +39,69 @@ int main(int argc, char *argv[]) {
   int memc = 10;
   unsigned char *mem = malloc(memc);
   unsigned char *ptr = mem;
-  int nest = 0;
+
+  struct Stack {
+    int idx;
+    int *stack;
+    int size;
+  };
+
+  struct Stack stack;
+  stack.idx = 0;
+  stack.size = 5;
+  stack.stack = malloc(sizeof(int) * stack.size);
+  stack.stack[stack.idx] = 1;
+
+
   while ((c = fgetc(fp)) != EOF) {
     int com = CHARS[(int)c];
-
+    if (stack.stack[stack.idx] == 0 && (com != 4 && com != 5)) continue;
     if (com == -1) continue;
     if (com == 0) {
-      printf("%c character is not defined in bf.", c);
-      //TODO: dealoc
+      printf("\"%c\" character is not defined in bf.", c);
       break;
     } else if (com == 1) {
       // Previous byte
+      if (ptr-1 < mem) {
+        printf("Gone to far back in memory");
+        break;
+      }
       ptr--;
     } else if (com == 2) {
       // Next byte
       ptr++;
+      if (ptr >= mem) {
+        int pos = ptr - mem;
+        mem = (unsigned char*)realloc(mem, memc+10);
+        ptr = mem + pos;
+      }
     } else if (com == 3) {
       // Print byte
       printf("%c", *ptr);
+    } else if (com == 4) {
+      // If open
+      stack.idx++;
+      if (stack.size <= stack.idx) {
+        stack.size += 5;
+        stack.stack = (int *)realloc(stack.stack, stack.size);
+      }
+      stack.stack[stack.idx] = (*ptr != 0);
+    } else if (com == 5) {
+      // If close
+      stack.idx--;
     } else if (com == 6) {
       // Decrement byte
       (*ptr)--;
     } else if (com == 7) {
       // Increment byte
       (*ptr)++;
+    } else if (com == 8) {
+      // Input a byte
+      scanf("%c", ptr);
     }
-
-
   }
+  free(mem);
+  free(stack.stack);
   printf("\n");
   return 0;
 }
